@@ -1,0 +1,345 @@
+[
+  {
+    "category": "Desayunos",
+    "name": "Desayuno Roots",
+    "description": "Patacones, carne al jugo, 2 huevos, bebida caliente y jugo",
+    "price": "4,50",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Desayunos",
+    "name": "Desayuno Americano",
+    "description": "2 tostadas con mantequilla, mermelada y queso, 2 huevos, bebida caliente y jugo",
+    "price": "3,50",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Desayunos",
+    "name": "Desayuno Costeño",
+    "description": "2 bolones con carne al jugo, 2 huevos, bebida caliente y jugo",
+    "price": "4,90",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Desayunos",
+    "name": "Desayuno Montecarlo",
+    "description": "Sánduche Montecarlo, 2 huevos, bebida caliente y jugo",
+    "price": "4,65",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Antojitos",
+    "name": "Humita",
+    "description": "",
+    "price": "1,25",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Antojitos",
+    "name": "Bolón de verde",
+    "description": "",
+    "price": "0,95",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Antojitos",
+    "name": "Pan de yuca",
+    "description": "",
+    "price": "0,40",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Empanadas",
+    "name": "Empanada chilena",
+    "description": "Rellena de pollo o carne",
+    "price": "2,60",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Empanadas",
+    "name": "Empanada argentina",
+    "description": "Rellena de pollo o carne",
+    "price": "2,60",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Empanadas",
+    "name": "Empanada de morocho",
+    "description": "Rellena de pollo o carne",
+    "price": "2,25",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Empanadas",
+    "name": "Empanada de queso",
+    "description": "",
+    "price": "1,35",
+    "source": "menu_2.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Sánduche americano",
+    "description": "Jamón, quesos, lechuga, tomate y salsa de la casa",
+    "price": "2,60",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Sánduche Montecarlo",
+    "description": "Tres capas de pan, jamón, queso y mantequilla",
+    "price": "2,60",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Sánduche de pollo",
+    "description": "Pollo desmechado con aderezo, vegetales y salsa de la casa",
+    "price": "2,60",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Sánduche pernil",
+    "description": "Pernil, cebollitas, vegetales y salsa de la casa",
+    "price": "3,85",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Mix italiano",
+    "description": "Jamón, tocino, salami y salsa de la casa",
+    "price": "1,65",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Sánduches",
+    "name": "Sánduche quiteño",
+    "description": "Queso de chancho, pastel mexicano, mortadela y queso",
+    "price": "2,65",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Hamburguesas",
+    "name": "Tradicional",
+    "description": "Carne de res, queso cheddar, vegetales y pepinillos",
+    "price": "3,80",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Hamburguesas",
+    "name": "Tociburguer",
+    "description": "Carne de res, tocino, queso cheddar y vegetales",
+    "price": "4,50",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Hamburguesas",
+    "name": "La Roots",
+    "description": "Carne de res, aros de cebolla, cheddar y pepinillos",
+    "price": "4,50",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Hamburguesas",
+    "name": "Roots BBQ",
+    "description": "Carne de res, cebollas caramelizadas, salsa BBQ, cheddar y pepinillos",
+    "price": "5,50",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Hamburguesas",
+    "name": "Jalapeño Bacon",
+    "description": "Carne de res, tocino, jalapeños, cheddar y pepinillos",
+    "price": "5,75",
+    "source": "menu_3.png"
+  },
+  {
+    "category": "Pizzas",
+    "name": "Pepperoni",
+    "description": "Mozzarella, pomodoro y pepperoni",
+    "price": "9,90",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Pizzas",
+    "name": "Jamón y champiñones",
+    "description": "Mozzarella, pomodoro, jamón y champiñones",
+    "price": "9,90",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Pizzas",
+    "name": "Tocino y romero",
+    "description": "Mozzarella, pomodoro, tocino y romero",
+    "price": "9,90",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Pizzas",
+    "name": "La Roots",
+    "description": "Mozzarella, pomodoro, tocino y choclo",
+    "price": "9,90",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Pizzas",
+    "name": "Slice de pizza",
+    "description": "",
+    "price": "1,55",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Platos",
+    "name": "Lasaña",
+    "description": "Pasta con boloñesa, mozzarella, pan y ensalada",
+    "price": "6,00",
+    "source": "menu_4.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Hot dog express",
+    "description": "",
+    "price": "2,70",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Salchipapa",
+    "description": "",
+    "price": "3,10",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Picada Manabá",
+    "description": "Patacones crujientes gratinados y salsa prieta",
+    "price": "4,15",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Alitas apanadas 6 unidades",
+    "description": "Salsa a elección",
+    "price": "6,00",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Chicken strips",
+    "description": "Pollo frito con papas y BBQ",
+    "price": "6,00",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Fish and fries",
+    "description": "Pescado apanado con papas",
+    "price": "6,00",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Picaditas",
+    "name": "Nachos con chilly beans",
+    "description": "",
+    "price": "5,50",
+    "source": "menu_5.png"
+  },
+  {
+    "category": "Ensaladas",
+    "name": "Ensalada de la casa",
+    "description": "",
+    "price": "3,00",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Ensaladas",
+    "name": "Ensalada César",
+    "description": "",
+    "price": "4,65",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Ensaladas",
+    "name": "Ensalada Roots",
+    "description": "",
+    "price": "4,65",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Espresso",
+    "description": "",
+    "price": "1,20",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Americano",
+    "description": "",
+    "price": "1,40",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Cappuccino",
+    "description": "",
+    "price": "2,40",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Mocaccino",
+    "description": "",
+    "price": "2,75",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Chocolate especial",
+    "description": "",
+    "price": "2,10",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Jugo de fruta 9 oz",
+    "description": "",
+    "price": "1,79",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Bebidas",
+    "name": "Batido de frutas 14 oz",
+    "description": "",
+    "price": "2,85",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Cocteles",
+    "name": "Caipiriña",
+    "description": "",
+    "price": "3,90",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Cocteles",
+    "name": "Mojito",
+    "description": "",
+    "price": "3,90",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Cocteles",
+    "name": "Michelada",
+    "description": "",
+    "price": "4,00",
+    "source": "menu_6.png"
+  },
+  {
+    "category": "Cocteles",
+    "name": "Cuba libre",
+    "description": "",
+    "price": "3,90",
+    "source": "menu_6.png"
+  }
+]

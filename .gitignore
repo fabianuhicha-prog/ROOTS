@@ -1,0 +1,15 @@
+# Never commit credentials, live databases, local state, or build artifacts
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+*.pyc
+.DS_Store
+.tmp/
+.local/
