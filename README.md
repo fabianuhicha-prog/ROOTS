@@ -19,6 +19,6 @@ Necesita Python 3 y Node.js para comprobar sintaxis JS. GitHub Actions valida ca
 ## Publicación Namecheap (sin tocar DalyAccounting)
 El despliegue no se dispara automáticamente. El workflow `deploy-roots-staging.yml` se ejecuta manualmente, solo desde `staging`, después de configurar un directorio independiente y SSH propio en cPanel/GitHub.
 
-Objetivo propuesto **sujeto a verificar**: `https://admroots.dalyfinanzas.com`, DocumentRoot `/home/dalypxmu/admroots_pruebas`. La publicación no crea el subdominio ni modifica DNS. Para activar el despliegue, verificar previamente que la carpeta sea exclusiva de ROOTS y colocar el marcador `.roots-web-deploy-approved`. Leer `docs/NAMECHEAP.md`.
+Objetivo propuesto **sujeto a verificar**: `https://admroots.dalyfinanzas.com`, DocumentRoot `/home/dalypxmu/admroots.dalyfinanzas.com`. La publicación no crea el subdominio ni modifica DNS. Para activar el despliegue, verificar previamente que la carpeta sea exclusiva de ROOTS y colocar el marcador `.roots-web-deploy-approved`. Leer `docs/NAMECHEAP.md`.
 
 Nunca utilizar `pruebas.dalyfinanzas.com`, las carpetas del ERP o las credenciales de DalyAccounting.
