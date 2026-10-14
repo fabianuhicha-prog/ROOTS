@@ -1,0 +1,38 @@
+name: ROOTS - Preflight seguro SSH Namecheap
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 6
+    steps:
+      - name: Comprobar disponibilidad de secretos sin revelar sus valores
+        env:
+          HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+          PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+          USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+          PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variable in HOST PORT USER PRIVATE_KEY KNOWN_HOSTS; do
+            if [[ -z "${!variable}" ]]; then
+              echo "::error::ROOTS: variable $variable no está disponible en el entorno roots-staging"
+              exit 1
+            fi
+          done
+          [[ "$HOST" == 'business70.web-hosting.com' && "$USER" == 'dalypxmu' && "$PORT" == '21098' ]] || { echo "::error::Destino no autorizado";exit 1; }
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          chmod 700 "$tmp"
+          printf '%s\n' "$PRIVATE_KEY" | tr -d '\r' > "$tmp/key"
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > "$tmp/known_hosts"
+          chmod 600 "$tmp/key" "$tmp/known_hosts"
+          ssh-keygen -y -P '' -f "$tmp/key" >/dev/null
+          ssh-keygen -F "[$HOST]:$PORT" -f "$tmp/known_hosts" >/dev/null || { echo "::error::Falta host SSH verificado";exit 1; }
+          ssh -i "$tmp/key" -p "$PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known_hosts" -o ConnectTimeout=15 "$USER@$HOST" 'set -eu; test "$(id -un)" = "dalypxmu"; root=/home/dalypxmu/admroots.dalyfinanzas.com; test -d "$root" && test ! -L "$root" && test -f "$root/.roots-web-deploy-approved" && test "$(readlink -f "$root")" = "$root"; echo ROOTS_REMOTE_DESTINATION_APPROVED'
+          echo 'ROOTS_PREFLIGHT_OK: conexión verificada sin publicar'
