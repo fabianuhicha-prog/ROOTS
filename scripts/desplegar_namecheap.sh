@@ -19,12 +19,12 @@ SCP=(scp -i "$TMP/deploy_key" -P "$PORT" -o IdentitiesOnly=yes -o StrictHostKeyC
 tar -czf "$TMP/roots-site.tar.gz" -C site .
 "${SSH[@]}" "$USER@$HOST" 'bash -s' <<'CHECK'
 set -euo pipefail
-root='/home/dalypxmu/admroots_pruebas'
+root='/home/dalypxmu/admroots.dalyfinanzas.com'
 test "$(id -un)" = 'dalypxmu'
 test -d "$root" && test ! -L "$root" && test -f "$root/.roots-web-deploy-approved"
 test "$(stat -c %U "$root")" = 'dalypxmu'
 # Additional exclusion of any existing DalyAccounting application roots.
-case "$(readlink -f "$root")" in /home/dalypxmu/admroots_pruebas) ;; *) echo 'DocumentRoot equivocado'; exit 1;; esac
+case "$(readlink -f "$root")" in /home/dalypxmu/admroots.dalyfinanzas.com) ;; *) echo 'DocumentRoot equivocado'; exit 1;; esac
 mkdir -p /home/dalypxmu/.roots_web_incoming /home/dalypxmu/.roots_web_backups
 chmod 700 /home/dalypxmu/.roots_web_incoming /home/dalypxmu/.roots_web_backups
 CHECK
@@ -32,7 +32,7 @@ CHECK
 "${SSH[@]}" "$USER@$HOST" "bash -s -- $COMMIT" <<'INSTALL'
 set -euo pipefail
 commit="$1"; [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || exit 1
-root='/home/dalypxmu/admroots_pruebas'
+root='/home/dalypxmu/admroots.dalyfinanzas.com'
 incoming="/home/dalypxmu/.roots_web_incoming/$commit.tar.gz"
 backup_dir='/home/dalypxmu/.roots_web_backups'
 test -d "$root" && test ! -L "$root" && test -f "$root/.roots-web-deploy-approved"
