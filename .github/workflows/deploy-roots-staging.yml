@@ -1,0 +1,53 @@
+name: Publicar ROOTS staging en Namecheap
+on:
+  workflow_dispatch:
+    inputs:
+      confirmacion:
+        description: Escribe PUBLICAR_ROOTS_STAGING después de validar aislamiento de cPanel
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  validar:
+    if: github.ref == 'refs/heads/staging' && inputs.confirmacion == 'PUBLICAR_ROOTS_STAGING'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: python3 scripts/validar_web.py
+  desplegar:
+    needs: validar
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Desplegar únicamente site/ en DocumentRoot ROOTS
+        env:
+          ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+          ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+          ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+          ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+          ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Verificar respuesta HTTPS (sin declarar aprobación funcional)
+        run: |
+          python3 - <<'PYTEST'
+          import urllib.request
+          url='https://admroots.dalyfinanzas.com/'
+          with urllib.request.urlopen(url, timeout=30) as response:
+              body=response.read(300000).decode('utf-8','replace')
+              assert response.status == 200
+              assert 'ROOTS & ROUTES' in body
+              assert 'noindex' in body.lower()
+          for path in ('productos.json','menu_digital.json','assets/logo.webp'):
+              with urllib.request.urlopen('https://admroots.dalyfinanzas.com/'+path, timeout=30) as resp:
+                  assert resp.status == 200 and int(resp.headers.get('Content-Length','1'))>0
+          print('HTTPS/archivos básicos: OK')
+          PYTEST
