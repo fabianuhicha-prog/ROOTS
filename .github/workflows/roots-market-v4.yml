@@ -1,0 +1,44 @@
+name: ROOTS V4 - Validar y exportar sitio maestro
+on:
+  push:
+    branches: [integracion/roots-market-arquitectura-v4, staging]
+    paths: ['site/**','scripts/validar_market_v4.py','.github/workflows/roots-market-v4.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validacion existente
+        run: python3 scripts/validar_web.py
+      - name: Validacion integral V4
+        run: python3 scripts/validar_market_v4.py
+      - name: Preparar paquete ZIP maestro
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,zipfile
+          root=pathlib.Path('.')
+          dest=pathlib.Path('/tmp/ROOTS_WEB_V4_ARQUITECTURA_MARKET_STAGING.zip')
+          with zipfile.ZipFile(dest,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=8) as z:
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or '.git' in path.parts:continue
+                  z.write(path,arcname=str(path))
+          with zipfile.ZipFile(dest) as z:
+              assert z.testzip() is None
+              assert 'site/index.html' in z.namelist()
+              assert 'site/market.html' in z.namelist()
+              assert 'site/menu.html' in z.namelist()
+              print('ZIP_MAESTRO_VERIFICADO',len(z.namelist()))
+          PY
+          sha256sum /tmp/ROOTS_WEB_V4_ARQUITECTURA_MARKET_STAGING.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: roots-v4-zip-maestro
+          path: /tmp/ROOTS_WEB_V4_ARQUITECTURA_MARKET_STAGING.zip
+          retention-days: 7
