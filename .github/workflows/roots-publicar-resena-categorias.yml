@@ -1,0 +1,71 @@
+name: ROOTS - Publicar resena market y redes
+on:
+  push:
+    branches: [staging]
+    paths: ['.github/workflows/roots-publicar-resena-categorias.yml']
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 15
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar contenido y catalogo completo
+        run: |
+          python3 scripts/validar_web.py
+          python3 scripts/validar_market_v4.py
+          python3 - <<'PY'
+          from pathlib import Path
+          home=Path('site/index.html').read_text()
+          market=Path('site/market.html').read_text()
+          for fragment in ('seis años de trayectoria','Santo Domingo, La Concordia y Quito','market.html?categoria=Bebidas','https://www.tiktok.com/search','nicole-track','Hamburguesas 2×1'):
+              assert fragment in home,fragment
+          for fragment in ('categoryLinks','new URLSearchParams(location.search)','productos.json'):
+              assert fragment in market,fragment
+          print('ROOTS_RESEÑA_CATEGORIAS_TIKTOK_VALIDADO')
+          PY
+      - name: Desplegar solo ROOTS con respaldo
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Verificar directorio y respaldo en Namecheap
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)";trap 'rm -rf "$tmp"' EXIT;chmod 700 "$tmp"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$tmp/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$tmp/known"
+          chmod 600 "$tmp/key" "$tmp/known"
+          ssh -i "$tmp/key" -p "$ROOTS_WEB_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          test "$(readlink -f "$root")" = "$root"
+          test -f "$root/.roots-web-deploy-approved"
+          grep -q 'seis años de trayectoria' "$root/index.html"
+          grep -q 'tiktok.com/search' "$root/index.html"
+          grep -q 'categoryLinks' "$root/market.html"
+          test -s "$root/menu.html" && test -s "$root/productos.json"
+          ls /home/dalypxmu/.roots_web_backups/pre_*.tar.gz | tail -n 1 >/dev/null
+          echo ROOTS_RESENA_MARKET_REDES_REMOTE_OK
+          REMOTE
+      - name: Verificar HTTPS publico con TLS
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          for path,needle in (('', 'seis años de trayectoria'),('market.html','categoryLinks')):
+              with urllib.request.urlopen('https://admroots.dalyfinanzas.com/'+path,timeout=25) as resp:
+                  body=resp.read().decode('utf-8')
+                  assert resp.status==200 and needle in body,(path,resp.status)
+          print('ROOTS_RESENA_MARKET_HTTPS_VERIFICADO')
+          PY
