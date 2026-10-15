@@ -1,0 +1,49 @@
+name: ROOTS diagnostico remoto no destructivo
+on:
+  push:
+    branches:
+      - diagnostico/roots-documentroot-readonly
+permissions:
+  contents: read
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 6
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Verificar destino y capacidad de respaldos sin escribir archivos
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ROOTS_WEB_SSH_HOST" = business70.web-hosting.com
+          test "$ROOTS_WEB_SSH_USER" = dalypxmu
+          test "$ROOTS_WEB_SSH_PORT" = 21098
+          dir="$(mktemp -d)"; trap 'rm -rf "$dir"' EXIT
+          chmod 700 "$dir"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$dir/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$dir/known"
+          chmod 600 "$dir/key" "$dir/known"
+          ssh-keygen -y -P '' -f "$dir/key" >/dev/null
+          ssh-keygen -F '[business70.web-hosting.com]:21098' -f "$dir/known" >/dev/null
+          ssh -i "$dir/key" -p 21098 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$dir/known" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'CHECK'
+          set -eu
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          if test "$(id -un)" = dalypxmu; then echo USER_OK; else echo USER_FAIL; fi
+          if test -d "$root"; then echo ROOT_EXISTS; else echo ROOT_MISSING; fi
+          if test -L "$root"; then echo ROOT_SYMLINK_UNSAFE; else echo ROOT_NOT_SYMLINK; fi
+          if test -f "$root/.roots-web-deploy-approved"; then echo MARKER_EXISTS; else echo MARKER_MISSING; fi
+          if test "$(readlink -f "$root")" = "$root"; then echo ROOT_CANONICAL_OK; else echo ROOT_CANONICAL_MISMATCH; fi
+          if test "$(stat -c %U "$root" 2>/dev/null)" = dalypxmu; then echo OWNER_OK; else echo OWNER_MISMATCH; fi
+          if test -w "$root"; then echo ROOT_WRITABLE; else echo ROOT_NOT_WRITABLE; fi
+          for p in /home/dalypxmu/.roots_web_incoming /home/dalypxmu/.roots_web_backups; do
+            if test -e "$p"; then
+              if test -d "$p" && test ! -L "$p" && test -w "$p"; then echo STORAGE_EXISTING_OK; else echo STORAGE_EXISTING_BAD; fi
+            elif test -w /home/dalypxmu; then echo STORAGE_PARENT_WRITABLE; else echo STORAGE_PARENT_NOT_WRITABLE; fi
+          done
+          CHECK
