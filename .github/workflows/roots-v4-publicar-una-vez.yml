@@ -1,0 +1,65 @@
+name: ROOTS V4 - Despliegue aislado verificado
+on:
+  push:
+    branches: [staging]
+    paths: ['.github/workflows/roots-v4-publicar-una-vez.yml']
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 15
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar web y catálogo V4
+        run: |
+          python3 scripts/validar_web.py
+          python3 scripts/validar_market_v4.py
+      - name: Desplegar sólo sitio ROOTS con copia de respaldo
+        shell: bash
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Confirmar ficheros desplegados por conexión autenticada
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          chmod 700 "$tmp"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$tmp/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$tmp/known"
+          chmod 600 "$tmp/key" "$tmp/known"
+          ssh -i "$tmp/key" -p "$ROOTS_WEB_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          test "$(id -un)" = dalypxmu
+          test "$(readlink -f "$root")" = "$root"
+          for file in index.html menu.html market.html menu_digital.json productos.json assets/logo.webp; do test -s "$root/$file" || exit 1; done
+          test -f "$root/.roots-web-deploy-approved"
+          ls -1 /home/dalypxmu/.roots_web_backups/pre_*.tar.gz | tail -n 1 >/dev/null
+          echo ROOTS_V4_REMOTE_FILES_AND_BACKUP_OK
+          REMOTE
+      - name: Comprobar HTTPS públicamente sin desactivar validación TLS
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          try:
+              with urllib.request.urlopen('https://admroots.dalyfinanzas.com/market.html',timeout=20) as r:
+                  b=r.read(400000)
+                  assert r.status==200 and b'Tu market, tu ruta' in b
+                  print('ROOTS_V4_PUBLIC_HTTPS_OK')
+          except Exception as e:
+              print('ROOTS_V4_PUBLIC_HTTPS_PENDIENTE:',type(e).__name__,str(e))
+              print('No se desactiva la validación TLS. Revisar certificado en cPanel.')
+          PY
