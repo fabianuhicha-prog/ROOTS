@@ -1,0 +1,72 @@
+name: ROOTS - Publicar promo miercoles 2x1
+on:
+  push:
+    branches: [staging]
+    paths: ['.github/workflows/roots-publicar-promo-hamburguesas.yml']
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 15
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar contenido, navegación y promoción
+        shell: bash
+        run: |
+          python3 scripts/validar_web.py
+          python3 scripts/validar_market_v4.py
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          s=Path('site/index.html').read_text()
+          for x in ('Miércoles de hamburguesas 2×1','Hamburguesas 2×1','Todas las sucursales','id="promo-hamburguesas"'):
+              assert x in s,x
+          print('PROMO_2X1_VALIDADA')
+          PY
+      - name: Publicar exclusivamente ROOTS con respaldo
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Comprobar contenido y copia en servidor ROOTS
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)";trap 'rm -rf "$tmp"' EXIT; chmod 700 "$tmp"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$tmp/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$tmp/known"
+          chmod 600 "$tmp/key" "$tmp/known"
+          ssh -i "$tmp/key" -p "$ROOTS_WEB_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          test "$(readlink -f "$root")" = "$root"
+          test -f "$root/.roots-web-deploy-approved"
+          grep -q 'Miércoles de hamburguesas 2×1' "$root/index.html"
+          grep -q 'Todas las sucursales' "$root/index.html"
+          test -s "$root/menu.html" && test -s "$root/market.html"
+          ls /home/dalypxmu/.roots_web_backups/pre_*.tar.gz | tail -n 1 >/dev/null
+          echo ROOTS_PROMO_PUBLISHED_AND_BACKUP_VERIFIED
+          REMOTE
+      - name: Verificación pública HTTPS con TLS estricto
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          try:
+              with urllib.request.urlopen('https://admroots.dalyfinanzas.com/', timeout=25) as response:
+                  body=response.read()
+                  assert response.status==200 and 'Miércoles de hamburguesas 2×1'.encode() in body
+                  print('ROOTS_PROMO_PUBLIC_HTTPS_OK')
+          except Exception as exc:
+              print('ROOTS_PROMO_PUBLIC_HTTPS_NOT_VERIFIED:',type(exc).__name__,str(exc))
+              raise
+          PY
