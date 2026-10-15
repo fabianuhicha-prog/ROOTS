@@ -1,0 +1,66 @@
+name: ROOTS - Publicar estrella Nicole
+on:
+  push:
+    branches: [staging]
+    paths: ['.github/workflows/roots-publicar-nicole.yml']
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 15
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar web y nueva estrella
+        run: |
+          python3 scripts/validar_web.py
+          python3 scripts/validar_market_v4.py
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('site/index.html').read_text()
+          for x in ('nicole-track','nicole-star','Nicole','prefers-reduced-motion'):
+              assert x in s,x
+          print('ROOTS_NICOLE_VALIDADO')
+          PY
+      - name: Desplegar sitio ROOTS con backup
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Verificar estrella en servidor exclusivo
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)";trap 'rm -rf "$tmp"' EXIT;chmod 700 "$tmp"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$tmp/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$tmp/known"
+          chmod 600 "$tmp/key" "$tmp/known"
+          ssh -i "$tmp/key" -p "$ROOTS_WEB_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          test "$(readlink -f "$root")" = "$root"
+          test -f "$root/.roots-web-deploy-approved"
+          grep -q 'nicole-track' "$root/index.html"
+          grep -q 'Nicole' "$root/index.html"
+          test -s "$root/market.html" && test -s "$root/menu.html"
+          ls /home/dalypxmu/.roots_web_backups/pre_*.tar.gz | tail -n 1 >/dev/null
+          echo ROOTS_NICOLE_REMOTE_OK
+          REMOTE
+      - name: Verificar contenido por HTTPS
+        run: |
+          python3 - <<'PY'
+          from urllib.request import urlopen
+          with urlopen('https://admroots.dalyfinanzas.com/',timeout=25) as r:
+              body=r.read()
+              assert r.status == 200 and b'nicole-track' in body and b'Nicole' in body
+          print('ROOTS_NICOLE_PUBLIC_HTTPS_OK')
+          PY
