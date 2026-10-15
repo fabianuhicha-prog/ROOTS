@@ -1,0 +1,83 @@
+name: ROOTS activacion autorizada y publicacion aislada
+on:
+  push:
+    branches: [integracion/roots-activar-publicacion-segura]
+    paths: ['.github/workflows/roots-activar-publicacion-segura.yml']
+permissions:
+  contents: read
+concurrency:
+  group: roots-web-staging-deploy
+  cancel-in-progress: false
+jobs:
+  publicar:
+    if: github.repository == 'fabianuhicha-prog/ROOTS' && github.ref == 'refs/heads/integracion/roots-activar-publicacion-segura'
+    runs-on: ubuntu-latest
+    environment: roots-staging
+    timeout-minutes: 15
+    env:
+      ROOTS_WEB_SSH_HOST: ${{ secrets.ROOTS_WEB_SSH_HOST }}
+      ROOTS_WEB_SSH_PORT: ${{ secrets.ROOTS_WEB_SSH_PORT }}
+      ROOTS_WEB_SSH_USER: ${{ secrets.ROOTS_WEB_SSH_USER }}
+      ROOTS_WEB_SSH_PRIVATE_KEY: ${{ secrets.ROOTS_WEB_SSH_PRIVATE_KEY }}
+      ROOTS_WEB_SSH_KNOWN_HOSTS: ${{ secrets.ROOTS_WEB_SSH_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validar archivos estaticos
+        run: python3 scripts/validar_web.py
+      - name: Autorizar exclusivamente DocumentRoot de AdmRoots
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ROOTS_WEB_SSH_HOST" = business70.web-hosting.com
+          test "$ROOTS_WEB_SSH_USER" = dalypxmu
+          test "$ROOTS_WEB_SSH_PORT" = 21098
+          test -n "$ROOTS_WEB_SSH_PRIVATE_KEY" && test -n "$ROOTS_WEB_SSH_KNOWN_HOSTS"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          chmod 700 "$tmp"
+          printf '%s\n' "$ROOTS_WEB_SSH_PRIVATE_KEY" > "$tmp/key"
+          printf '%s\n' "$ROOTS_WEB_SSH_KNOWN_HOSTS" > "$tmp/known_hosts"
+          chmod 600 "$tmp/key" "$tmp/known_hosts"
+          ssh-keygen -y -P '' -f "$tmp/key" >/dev/null
+          ssh-keygen -F '[business70.web-hosting.com]:21098' -f "$tmp/known_hosts" >/dev/null
+          ssh -i "$tmp/key" -p 21098 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$tmp/known_hosts" "$ROOTS_WEB_SSH_USER@$ROOTS_WEB_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          umask 077
+          root=/home/dalypxmu/admroots.dalyfinanzas.com
+          test "$(id -un)" = dalypxmu
+          test -d "$root" && test ! -L "$root"
+          test "$(readlink -f "$root")" = "$root"
+          test "$(stat -c %U "$root")" = dalypxmu
+          test -w "$root"
+          test "$root" != /home/dalypxmu/daly_erp
+          test "$root" != /home/dalypxmu/daly_v12_pruebas
+          if ! test -f "$root/.roots-web-deploy-approved"; then
+             printf 'ROOTS exclusive DocumentRoot approved by owner via automated staging release\n' > "$root/.roots-web-deploy-approved"
+             chmod 600 "$root/.roots-web-deploy-approved"
+          fi
+          echo ROOTS_EXCLUSIVE_MARKER_READY
+          REMOTE
+      - name: Desplegar sitio con respaldo aislado y sin borrar archivos existentes
+        run: bash scripts/desplegar_namecheap.sh
+      - name: Verificar HTTPS y contenido real
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import time, urllib.request
+          base='https://admroots.dalyfinanzas.com/'
+          for attempt in range(5):
+              try:
+                  for path,needle in [('',b'ROOTS & ROUTES'),('productos.json',b'['),('menu_digital.json',b'['),('assets/logo.webp',None)]:
+                      with urllib.request.urlopen(base+path,timeout=20) as resp:
+                          data=resp.read(500000)
+                          assert resp.status==200 and len(data)>0,(path,resp.status)
+                          if needle is not None: assert needle in data,(path,'contenido inesperado')
+                  print('ROOTS_HTTPS_PUBLICACION_VERIFICADA')
+                  break
+              except Exception as exc:
+                  if attempt==4: raise
+                  print('HTTPS pendiente de propagacion, intento',attempt+1,type(exc).__name__)
+                  time.sleep(8)
+          PY
